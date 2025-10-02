@@ -32,9 +32,11 @@ This repository contains a basic web application for streaming audio files, cont
 
 - Get your project whitelisted for deployment on `arrnc-api.ccbs.ed.ac.uk`
 - Register a self-hosted runner for your repository
-- Add deployment bot credentials to your repository secrets
-- Configure host port assignments and persistent storage paths
-- Set up MS SQL Server connectivity (if needed)
+
+
+⚠️ **Repository maintainers must:**
+
+- Give the GitHub account `arrnc-bot` **read access** to your repository so it can pull the built container images from GitHub Container Registry
 
 ## How the Deployment Pipeline Works
 
@@ -243,9 +245,8 @@ The server administrator handles:
 
 - **Host port assignment** for your application (e.g., 8070 for production, 8071 for dev)
 - **Host volume paths** for persistent data
-- **Environment variables** for registry authentication
+- **Secure environment file** (`/etc/deployment/deploy.env`) containing deployment credentials
 - **MS SQL Server connectivity** (if needed)
-- **Deployment bot credentials** (`DEPLOYMENT_BOT_USERNAME` and `DEPLOYMENT_BOT_PAT`)
 
 ### Application Requirements
 
@@ -255,12 +256,7 @@ Your application should be designed to:
 - **Use configurable volume mount points** (default: /app/audio_data)
 - **Handle standard Docker signals** for graceful shutdown
 
-### GitHub Secrets
 
-The workflow uses GitHub's built-in `GITHUB_TOKEN` for container registry authentication. For deployment to work, contact the server administrator to add these secrets to your repository:
-
-- `DEPLOYMENT_BOT_USERNAME`: Username for the deployment bot
-- `DEPLOYMENT_BOT_PAT`: Personal Access Token for the deployment bot
 
 ## Data and Volume Management
 
@@ -329,5 +325,5 @@ Just modify the `Dockerfile` and application code in the `app/` directory to sui
 ## Getting Help
 
 - **For deployment access**: Contact the server administrator
-- **For technical issues**: Create an issue in this repository
-- **For custom requirements**: Discuss with the server administrator before implementation
+- **For workflow customization**: Refer to the [GitHub Actions documentation](https://docs.github.com/en/actions)
+- **For custom requirements**: Discuss with the server administrator
