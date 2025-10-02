@@ -53,7 +53,7 @@ jobs:
           DEPLOYMENT_BOT_PAT: ${{ secrets.DEPLOYMENT_BOT_PAT }}
         run: |
           echo "Deploying production from main branch..."
-          container-web-deploy production-api ghcr.io/${{ github.repository }}:main
+          sudo container-web-deploy production-api ghcr.io/${{ github.repository }}:main
 
       - name: Deploy Development
         if: github.ref == 'refs/heads/dev'
@@ -62,4 +62,4 @@ jobs:
           DEPLOYMENT_BOT_PAT: ${{ secrets.DEPLOYMENT_BOT_PAT }}
         run: |
           echo "Deploying development from dev branch..."
-          container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev
+          sudo container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev
