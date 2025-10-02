@@ -31,6 +31,7 @@ This repository contains a basic web application for streaming audio files, cont
 ⚠️ **Contact the server administrator** to:
 
 - Get your project whitelisted for deployment on `arrnc-api.ccbs.ed.ac.uk`
+- Register a self-hosted runner for your repository
 - Add deployment bot credentials to your repository secrets
 - Configure host port assignments and persistent storage paths
 - Set up MS SQL Server connectivity (if needed)
