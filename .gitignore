@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Docker
+*.dockerignore
+
+# Logs
+*.log
+
+# IDEs
+.idea/
+.vscode/
+
+# Audio files
+app/audio_data/*
+!app/audio_data/.gitkeep
+
+# Deployment scripts (maintained separately on server)
+server-scripts/
