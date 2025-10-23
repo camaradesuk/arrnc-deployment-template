@@ -11,12 +11,12 @@ This repository contains a basic web application for streaming audio files, cont
 1. **Fork or use as a template** for your project
 2. **Customize the application code** in the `app/` directory
 3. **Update the Dockerfile** if your application has different requirements
-4. **Configure the workflow** in `.github/workflows/main.yml` to match your project
+4. **Configure the workflow** in `.github/workflows/deploy.yml` to match your project
 5. **Contact the server administrator** to get deployment access
 
 **Using as a reference for existing projects:**
 
-1. **Copy the workflow** from `.github/workflows/main.yml` to your existing repository
+1. **Copy the workflow** from `.github/workflows/deploy.yml` to your existing repository
 2. **Adapt the Dockerfile** patterns for your application
 3. **Review the deployment parameters** below
 4. **Contact the server administrator** to get deployment access
@@ -60,7 +60,7 @@ graph LR
 
 ## Understanding the GitHub Actions Workflow
 
-The `.github/workflows/main.yml` file contains two distinct jobs that run sequentially:
+The `.github/workflows/deploy.yml` file contains two distinct jobs that run sequentially:
 
 ### Workflow Triggers (Customizable)
 
@@ -148,6 +148,92 @@ on:
   schedule:
     - cron: '0 2 * * 1'  # Weekly Monday 2 AM deployment
 ```
+
+## GitHub Environments and Secrets
+
+This template uses GitHub Environments to scope secrets and apply protections per environment. In `/.github/workflows/deploy.yml` the deploy stage is split into two jobs that target different environments:
+
+```yaml
+jobs:
+  deploy-production:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    environment: production
+    steps:
+      - name: Deploy Production
+        run: |
+          sudo container-web-deploy production-api ghcr.io/${{ github.repository }}:main \
+            -e APP_MODE=production \
+            -e API_TOKEN=${{ secrets.API_TOKEN }}
+
+  deploy-development:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/dev'
+    runs-on: self-hosted
+    environment: development
+    steps:
+      - name: Deploy Development
+        run: |
+          sudo container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev \
+            -e APP_MODE=development \
+            -e API_TOKEN=${{ secrets.API_TOKEN }}
+```
+
+### What this does
+
+- Binds jobs to environments (`production` and `development`) so each job can access that environment’s secrets via `${{ secrets.<NAME> }}`.
+- Restricts which branch can deploy to each environment using job-level `if:` guards:
+  - `main` → `production`
+  - `dev` → `development`
+- Passes two example environment variables to the container:
+  - A hardcoded value (`APP_MODE`) suitable for non-sensitive config.
+  - A secret (`API_TOKEN`) sourced from the environment’s secrets.
+
+### How to create environments and add secrets
+
+1. In your repository, go to Settings → Environments.
+2. Click “New environment” and create:
+   - `production`
+   - `dev`
+3. For each environment, open it and add secrets:
+   - Click “Add secret”.
+   - Name: `API_TOKEN` (or your preferred name; keep it consistent with the workflow).
+   - Value: the token/string your app needs.
+
+Official docs:
+
+- Using environments for deployment: <https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment>
+- Creating encrypted secrets for an environment: <https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-an-environment>
+- Workflow syntax for environments (job-level `environment`): <https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idenvironment>
+- Secrets context reference: <https://docs.github.com/en/actions/learn-github-actions/contexts#secrets-context>
+
+### Limiting which branches can deploy to each environment
+
+This template enforces branch-to-environment mapping within the workflow using `if: github.ref == 'refs/heads/<branch>'` on each deploy job. You can add defense in depth by restricting allowable branches directly on the environment:
+
+1. Settings → Environments → choose the environment (e.g., `production`).
+2. Under “Deployment branches and tags”, restrict to the branch that’s allowed to deploy (e.g., `main` for `production`, `dev` for `dev`).
+
+Docs: Deployment branches and tags
+
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-branches-and-tags>
+
+Additional reference (same concept, legacy docs path):
+
+- <https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#deployment-branches-and-tags>
+
+You can also set optional protection rules like required reviewers or wait timers to gate deployments:
+
+- <https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#environment-protection-rules>
+
+These protection settings are configured per environment under your repository’s Settings → Environments. They let you enforce branch restrictions and other controls (required reviewers, wait timers, required secrets) independently from the workflow logic.
+
+### Tips and troubleshooting
+
+- If your editor warns that `secrets.API_TOKEN` is undefined, ensure you created it as an environment secret for both `production` and `dev`.
+- Secret names are case-sensitive. The workflow expects `API_TOKEN` by default; change either the workflow or the secret name so they match.
+- If you add more environment-specific secrets, reference them the same way: `${{ secrets.MY_SECRET }}`.
 
 ### Deployment Step Customization
 
@@ -249,7 +335,7 @@ container-web-deploy dev-api ghcr.io/yourusername/your-repo:dev -e LOG_LEVEL=deb
 
 ### What You Configure (Required)
 
-Update `.github/workflows/main.yml` to reflect your project:
+Update `.github/workflows/deploy.yml` to reflect your project:
 
 - **Image names** to match your repository
 - **Container names** (must be `production-api` or `dev-api`)
@@ -322,7 +408,7 @@ db_password = os.getenv('MSSQL_SA_PASSWORD')
   - `templates/index.html`: The HTML template for the web interface
   - `audio_data/`: A directory to store your audio files
 - `Dockerfile`: Defines the Docker container for the application
-- `.github/workflows/main.yml`: The GitHub Actions workflow for building and deploying the application
+- `.github/workflows/deploy.yml`: The GitHub Actions workflow for building and deploying the application
 
 ## Example Applications
 

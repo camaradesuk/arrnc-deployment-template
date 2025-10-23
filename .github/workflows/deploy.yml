@@ -1,4 +1,4 @@
-name: Build and Deploy API
+name: Container Build and Deploy
 
 on:
   push:
@@ -42,18 +42,28 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
 
-  deploy:
+  deploy-production:
     needs: build-and-push
+    if: github.ref == 'refs/heads/main'
     runs-on: self-hosted
+    environment: production
     steps:
       - name: Deploy Production
-        if: github.ref == 'refs/heads/main'
         run: |
           echo "Deploying production from main branch..."
-          sudo container-web-deploy production-api ghcr.io/${{ github.repository }}:main
+          sudo container-web-deploy production-api ghcr.io/${{ github.repository }}:main \
+            -e APP_MODE=production \
+            -e API_TOKEN=${{ secrets.API_TOKEN }}
 
+  deploy-development:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/dev'
+    runs-on: self-hosted
+    environment: development
+    steps:
       - name: Deploy Development
-        if: github.ref == 'refs/heads/dev'
         run: |
           echo "Deploying development from dev branch..."
-          sudo container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev
+          sudo container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev \
+            -e APP_MODE=development \
+            -e API_TOKEN=${{ secrets.API_TOKEN }}
