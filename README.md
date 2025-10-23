@@ -4,6 +4,27 @@
 
 This repository contains a basic web application for streaming audio files, containerized with Docker, and deployed using GitHub Actions to `arrnc-api.ccbs.ed.ac.uk`.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Critical Requirements](#critical-requirements)
+- [How the Deployment Pipeline Works](#how-the-deployment-pipeline-works)
+- [Understanding the GitHub Actions Workflow](#understanding-the-github-actions-workflow)
+  - [Workflow Triggers](#workflow-triggers-customizable)
+  - [Job 1: build-and-push](#job-1-build-and-push)
+  - [Job 2: deploy](#job-2-deploy)
+- [GitHub Environments and Secrets](#github-environments-and-secrets)
+  - [How to create environments and add secrets](#how-to-create-environments-and-add-secrets)
+  - [Limiting which branches can deploy to each environment](#limiting-which-branches-can-deploy-to-each-environment)
+- [Deployment Step Customization](#deployment-step-customization)
+- [Deployment Script Reference](#deployment-script-reference)
+- [Configuration Reference](#configuration-reference)
+- [Data and Volume Management](#data-and-volume-management)
+- [Optional: Database Connectivity](#optional-database-connectivity)
+- [Project Structure](#project-structure)
+- [Monitoring and Logs](#monitoring-and-logs)
+- [Getting Help](#getting-help)
+
 ## Quick Start
 
 **Using this template:**
@@ -171,7 +192,7 @@ jobs:
     needs: build-and-push
     if: github.ref == 'refs/heads/dev'
     runs-on: self-hosted
-    environment: development
+  environment: dev
     steps:
       - name: Deploy Development
         run: |
@@ -182,10 +203,10 @@ jobs:
 
 ### What this does
 
-- Binds jobs to environments (`production` and `development`) so each job can access that environment’s secrets via `${{ secrets.<NAME> }}`.
+- Binds jobs to environments (`production` and `dev`) so each job can access that environment’s secrets via `${{ secrets.<NAME> }}`.
 - Restricts which branch can deploy to each environment using job-level `if:` guards:
   - `main` → `production`
-  - `dev` → `development`
+  - `dev` → `dev`
 - Passes two example environment variables to the container:
   - A hardcoded value (`APP_MODE`) suitable for non-sensitive config.
   - A secret (`API_TOKEN`) sourced from the environment’s secrets.
@@ -266,16 +287,7 @@ These protection settings are configured per environment under your repository�
     curl -f http://localhost:8070/health || exit 1
 ```
 
-### Build Step Customization
-
-**Additional options for the `build-and-push` job:**
-
-- Add security scanning steps
-- Include image optimization
-- Add multi-platform builds
-- Customise repository tags
-- Customise image tags
-- Include build arguments
+<!-- Build Step Customization section was consolidated into 'Customization Options' under Job 1 to avoid duplication. -->
 
 ## Deployment Script Reference
 
