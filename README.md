@@ -312,10 +312,6 @@ These protection settings are configured per environment under your repositoryâ€
 
 ## Deployment Script Reference
 
-<!-- markdownlint-disable MD033 -->
-<details>
-<summary>Click to expand</summary>
-
 The `container-web-deploy` script is maintained by the server administrator (not by developers using this template). As a developer, you call it from your workflow; the server admin keeps it installed and up to date.
 
 ### Script Parameters (updated)
@@ -368,9 +364,6 @@ container-web-deploy production-api ghcr.io/yourusername/your-repo:main -p 8080 
 container-web-deploy dev-api ghcr.io/yourusername/your-repo:dev -e LOG_LEVEL=debug -e WORKERS=4
 ```
 
-</details>
-<!-- markdownlint-restore -->
-
 ## Configuration Reference
 
 ### What You Configure (Required)
@@ -403,10 +396,6 @@ Your application should be designed to:
 
 ## Data and Volume Management
 
-<!-- markdownlint-disable MD033 -->
-<details>
-<summary>Click to expand</summary>
-
 ### Application Data Files
 
 **Note**: The `app/audio_data/` directory is just an example for this audio streaming demo. You can configure your own data directories based on your application's needs.
@@ -426,14 +415,7 @@ Your application can use any volume path you need:
 - **Default if not specified**: `/app/audio_data`
 - **Host-side storage**: Managed by the server administrator
 
-</details>
-<!-- markdownlint-restore -->
-
 ## Optional: Database Connectivity
-
-<!-- markdownlint-disable MD033 -->
-<details>
-<summary>Click to expand</summary>
 
 **Note**: This section only applies if your application requires database access.
 
@@ -451,9 +433,6 @@ db_username = os.getenv('MSSQL_SA_USERNAME')
 db_password = os.getenv('MSSQL_SA_PASSWORD')
 # Connect to your database server using these credentials
 ```
-
-</details>
-<!-- markdownlint-restore -->
 
 ## Project Structure
 
