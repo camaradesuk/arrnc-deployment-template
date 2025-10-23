@@ -8,6 +8,7 @@ This repository contains a basic web application for streaming audio files, cont
 
 - [Quick Start](#quick-start)
 - [Critical Requirements](#critical-requirements)
+- [Project Structure](#project-structure)
 - [How the Deployment Pipeline Works](#how-the-deployment-pipeline-works)
 - [Understanding the GitHub Actions Workflow](#understanding-the-github-actions-workflow)
   - [Workflow Triggers](#workflow-triggers-customizable)
@@ -21,7 +22,6 @@ This repository contains a basic web application for streaming audio files, cont
 - [Configuration Reference](#configuration-reference)
 - [Data and Volume Management](#data-and-volume-management)
 - [Optional: Database Connectivity](#optional-database-connectivity)
-- [Project Structure](#project-structure)
 - [Monitoring and Logs](#monitoring-and-logs)
 - [Getting Help](#getting-help)
 
@@ -58,6 +58,15 @@ This repository contains a basic web application for streaming audio files, cont
 ⚠️ **Repository maintainers must:**
 
 - Give the GitHub account `arrnc-bot` **read access** to your repository so it can pull the built container images from GitHub Container Registry
+
+## Project Structure
+
+- `app/`: Contains the Flask web application
+  - `app.py`: The main application file
+  - `templates/index.html`: The HTML template for the web interface
+  - `audio_data/`: A directory to store your audio files
+- `Dockerfile`: Defines the Docker container for the application
+- `.github/workflows/deploy.yml`: The GitHub Actions workflow for building and deploying the application
 
 ## How the Deployment Pipeline Works
 
@@ -118,22 +127,13 @@ The example workflow triggers on pushes to `main` and `dev` branches, but this c
 
 ### Job 2: `deploy`
 
-**Purpose**: Deploys your container to `arrnc-api.ccbs.ed.ac.uk`
+**Purpose**: Deploys to `arrnc-api.ccbs.ed.ac.uk` via the self-hosted runner using the server-managed `container-web-deploy` script.
 
-**Key Steps**:
+**Defaults in this template**:
 
-- Runs on the self-hosted runner (physically located on the deployment server)
-- Determines container name based on the branch (`main` → `production-api`, `dev` → `dev-api`)
-- Calls the server-managed `container-web-deploy` script
-- Passes the container name and image URL to the deployment script
-
-**Branch to Container Mapping** *(Customizable with server administrator approval)*:
-
-- `main` branch → `production-api` container
-- `dev` branch → `dev-api` container
-- Other branches → No deployment (workflow will skip the deploy job)
-
-*Note: This mapping can be customized to use different branch names or trigger patterns, but requires coordination with the server administrator to ensure proper URL routing.*
+- Branch → Container name: `main` → `production-api`, `dev` → `dev-api`
+- Image source: GitHub Container Registry tags for the branch (`:main`, `:dev`)
+- For environment usage, secret injection, and branch restrictions, see [GitHub Environments and Secrets](#github-environments-and-secrets)
 
 ## Customizing the Workflow
 
@@ -142,64 +142,18 @@ The GitHub Actions workflow is highly adaptable to your project's needs:
 ### Workflow Trigger Examples
 
 ```yaml
-# Manual deployment trigger
-on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-        - dev
-        - production
-
-# Tag-based releases
-on:
-  push:
-    tags:
-      - 'v*'
-
-# Multiple triggers
 on:
   push:
     branches: [main, dev]
   workflow_dispatch:
-  schedule:
-    - cron: '0 2 * * 1'  # Weekly Monday 2 AM deployment
 ```
 
-## GitHub Environments and Secrets
+- To deploy on tags: add `push: tags: ['v*']`
+- To schedule: add `schedule: - cron: '0 2 * * 1'`
+- To build on PRs: add `pull_request:`
+- See full options: <https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows>
 
-This template uses GitHub Environments to scope secrets and apply protections per environment. In `/.github/workflows/deploy.yml` the deploy stage is split into two jobs that target different environments:
 
-```yaml
-jobs:
-  deploy-production:
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main'
-    runs-on: self-hosted
-    environment: production
-    steps:
-      - name: Deploy Production
-        run: |
-          sudo container-web-deploy production-api ghcr.io/${{ github.repository }}:main \
-            -e APP_MODE=production \
-            -e API_TOKEN=${{ secrets.API_TOKEN }}
-
-  deploy-development:
-    needs: build-and-push
-    if: github.ref == 'refs/heads/dev'
-    runs-on: self-hosted
-  environment: dev
-    steps:
-      - name: Deploy Development
-        run: |
-          sudo container-web-deploy dev-api ghcr.io/${{ github.repository }}:dev \
-            -e APP_MODE=development \
-            -e API_TOKEN=${{ secrets.API_TOKEN }}
-```
 
 ### What this does
 
@@ -210,6 +164,8 @@ jobs:
 - Passes two example environment variables to the container:
   - A hardcoded value (`APP_MODE`) suitable for non-sensitive config.
   - A secret (`API_TOKEN`) sourced from the environment’s secrets.
+
+## GitHub Environments and Secrets
 
 ### How to create environments and add secrets
 
@@ -434,15 +390,6 @@ db_password = os.getenv('MSSQL_SA_PASSWORD')
 # Connect to your database server using these credentials
 ```
 
-## Project Structure
-
-- `app/`: Contains the Flask web application
-  - `app.py`: The main application file
-  - `templates/index.html`: The HTML template for the web interface
-  - `audio_data/`: A directory to store your audio files
-- `Dockerfile`: Defines the Docker container for the application
-- `.github/workflows/deploy.yml`: The GitHub Actions workflow for building and deploying the application
-
 ## Example Applications
 
 This template can be adapted for virtually any type of containerized application:
@@ -462,7 +409,11 @@ Container logs are available through a web-based log viewer (Dozzle):
 
 - **Access URL**: `https://arrnc-api.ccbs.ed.ac.uk/spunlogs`
 - **Credentials**: Contact the server administrator for access credentials
-- **What you can see**: Real-time container logs, historical logs, search and filtering
+- **What you can see**:
+  - Real-time container logs
+  - Resource usage (CPU and memory)
+  - Container health status (if configured)
+  - Historical logs, search and filtering
 
 This allows you to monitor your application's behavior and troubleshoot issues without requiring direct server access.
 
