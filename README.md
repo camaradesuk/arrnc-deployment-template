@@ -187,29 +187,44 @@ on:
 - Add security scanning steps
 - Include image optimization
 - Add multi-platform builds
-- Customize image tags
+- Customise repository tags
+- Customise image tags
 - Include build arguments
 
 ## Deployment Script Reference
 
-The `container-web-deploy` script is maintained by the server administrator (not by developers using this template). As a developer, you don't need to manage this script - it's handled by the server administrator.
+The `container-web-deploy` script is maintained by the server administrator (not by developers using this template). As a developer, you call it from your workflow; the server admin keeps it installed and up to date.
 
-### Script Parameters
+### Script Parameters (updated)
+
+The script now supports both positional arguments and named flags, plus passing custom environment variables.
 
 ```bash
-# Basic deployment (uses defaults: port 5000, volume /app/audio_data)
+# Basic deployment (uses defaults: container port 5000, volume path /app/audio_data)
 container-web-deploy <container-name> <image-name>
 
-# With custom container port and volume path
+# Backward-compatible positional overrides
 container-web-deploy <container-name> <image-name> [container_port] [container_volume_path]
+
+# Named flags (recommended)
+container-web-deploy <container-name> <image-name> \
+  [-p|--port <container_port>] \
+  [-v|--volume <container_volume_path>] \
+  [-e|--env KEY=VALUE]...    # repeatable
 ```
+
+Notes:
+
+- Host port and host volume locations are fixed and managed on the server. You can only change the container-internal port and the container-internal mount path.
+- Allowed container names are strictly whitelisted by the server: only `production-api` and `dev-api` are accepted.
 
 **Parameters:**
 
-- `container-name`: **(REQUIRED)** Must be either `production-api` or `dev-api` only
-- `image-name`: **(REQUIRED)** The full Docker image URL from GitHub Container Registry
-- `container_port`: **(OPTIONAL)** Port your application listens on inside the container (default: 5000)
-- `container_volume_path`: **(OPTIONAL)** Path inside container for persistent data (default: /app/audio_data)
+- `container-name`: REQUIRED. Must be `production-api` or `dev-api`.
+- `image-name`: REQUIRED. Full Docker image URL from GitHub Container Registry.
+- `-p, --port`: OPTIONAL. Container-internal port your app listens on (default: `5000`).
+- `-v, --volume`: OPTIONAL. Container-internal mount point for persistent data (default: `/app/audio_data`).
+- `-e, --env KEY=VALUE`: OPTIONAL, repeatable. Extra environment variables to pass into the container.
 
 ### Example Deployment Calls
 
@@ -217,14 +232,17 @@ container-web-deploy <container-name> <image-name> [container_port] [container_v
 # Production deployment (basic)
 container-web-deploy production-api ghcr.io/yourusername/your-repo:main
 
-# Development deployment (basic) 
+# Development deployment (basic)
 container-web-deploy dev-api ghcr.io/yourusername/your-repo:dev
 
-# Development deployment with custom port
+# Development deployment overriding container-internal port (positional)
 container-web-deploy dev-api ghcr.io/yourusername/your-repo:dev 3000
 
-# Production deployment with custom configuration
-container-web-deploy production-api ghcr.io/yourusername/your-repo:main 8080 /app/custom_data
+# Production deployment using named flags
+container-web-deploy production-api ghcr.io/yourusername/your-repo:main -p 8080 -v /app/custom_data
+
+# Development deployment with custom environment variables
+container-web-deploy dev-api ghcr.io/yourusername/your-repo:dev -e LOG_LEVEL=debug -e WORKERS=4
 ```
 
 ## Configuration Reference
@@ -243,10 +261,9 @@ Update `.github/workflows/main.yml` to reflect your project:
 
 The server administrator handles:
 
-- **Host port assignment** for your application (e.g., 8070 for production, 8071 for dev)
+- **Host port assignment** for your application
 - **Host volume paths** for persistent data
-- **Secure environment file** (`/etc/deployment/deploy.env`) containing deployment credentials
-- **MS SQL Server connectivity** (if needed)
+- **MS SQL Server credentials** for database access(if needed)
 
 ### Application Requirements
 
@@ -285,8 +302,8 @@ Your application can use any volume path you need:
 
 If your application requires MS SQL Server database access, the deployment infrastructure on `arrnc-api.ccbs.ed.ac.uk` supports automatic configuration:
 
-- **Environment variables** `MSSQL_SA_USERNAME` and `MSSQL_SA_PASSWORD` will be automatically provided to your container if configured by the server administrator
-- Your application should be designed to read these environment variables for database connection strings
+- If configured by the server administrator, `MSSQL_SA_USERNAME` and `MSSQL_SA_PASSWORD` are securely sourced on the server and automatically injected into your container at deploy time by `container-web-deploy`.
+- Your application should read these environment variables for database connectivity; you do not need to add them to your workflow.
 
 **Example usage in your application:**
 
@@ -322,8 +339,19 @@ This template can be adapted for virtually any type of containerized application
 
 Just modify the `Dockerfile` and application code in the `app/` directory to suit your needs! The deployment infrastructure on `arrnc-api.ccbs.ed.ac.uk` supports any web application that can run in a Docker container.
 
+## Monitoring and Logs
+
+Container logs are available through a web-based log viewer (Dozzle):
+
+- **Access URL**: `https://arrnc-api.ccbs.ed.ac.uk/spunlogs`
+- **Credentials**: Contact the server administrator for access credentials
+- **What you can see**: Real-time container logs, historical logs, search and filtering
+
+This allows you to monitor your application's behavior and troubleshoot issues without requiring direct server access.
+
 ## Getting Help
 
 - **For deployment access**: Contact the server administrator
+- **For log viewer access**: Contact the server administrator for URL and credentials
 - **For workflow customization**: Refer to the [GitHub Actions documentation](https://docs.github.com/en/actions)
 - **For custom requirements**: Discuss with the server administrator
